@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "planning.schema.json",
+  "title": "Planner Phase Output",
+  "description": "JSON Schema contract for the Planner agent output. The Planner transforms analysis findings into an executable plan with milestones, tasks, dependencies, rollback strategy, and success criteria. It MUST NOT modify any source files.",
+  "type": "object",
+  "required": ["phase", "input_analysis", "strategy", "milestones", "tasks", "rollback_plan", "success_criteria"],
+  "properties": {
+    "phase": {
+      "type": "string",
+      "const": "planner",
+      "description": "Phase identifier — always 'planner'"
+    },
+    "input_analysis": {
+      "type": "string",
+      "description": "Reference summary of the analyzer output consumed"
+    },
+    "strategy": {
+      "type": "string",
+      "description": "High-level execution strategy"
+    },
+    "milestones": {
+      "type": "array",
+      "description": "Ordered delivery milestones",
+      "items": {
+        "type": "object",
+        "required": ["name", "order"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Milestone name"
+          },
+          "order": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Execution order (1-based)"
+          },
+          "criteria": {
+            "type": "string",
+            "description": "What must be true to consider this milestone complete"
+          }
+        }
+      }
+    },
+    "tasks": {
+      "type": "array",
+      "description": "Ordered list of executable tasks",
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "priority", "owner", "depends_on"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^T[0-9]{3}$",
+            "description": "Unique task ID (e.g., T001)"
+          },
+          "title": {
+            "type": "string",
+            "description": "Task description"
+          },
+          "priority": {
+            "type": "string",
+            "enum": ["low", "medium", "high"],
+            "description": "Task priority"
+          },
+          "owner": {
+            "type": "string",
+            "description": "Agent or role responsible for execution"
+          },
+          "depends_on": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of task IDs this task depends on"
+          },
+          "estimated_effort": {
+            "type": "string",
+            "description": "Estimated effort (e.g., '5min', '1h')"
+          },
+          "files": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Files expected to be created or modified"
+          },
+          "commands": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Commands expected to be run"
+          }
+        }
+      }
+    },
+    "rollback_plan": {
+      "type": "array",
+      "description": "Step-by-step rollback instructions if the plan fails",
+      "items": {
+        "type": "string"
+      }
+    },
+    "success_criteria": {
+      "type": "array",
+      "description": "Verifiable criteria for plan success",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "additionalProperties": false
+}

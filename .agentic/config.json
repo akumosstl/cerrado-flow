@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "agentic-config.schema.json",
+  "title": "Agentic Framework Configuration",
+  "version": "1.0.0",
+  "pipeline": {
+    "name": "simple-flow",
+    "phases": ["analyzer", "planner", "implementer", "verifier"],
+    "max_replan_loops": 2,
+    "auto_advance": false,
+    "stop_on_failure": true
+  },
+  "token_budgets": {
+    "analyzer": 8000,
+    "planner": 10000,
+    "implementer": 16000,
+    "verifier": 6000
+  },
+  "memory": {
+    "dir": ".agentic/memory/",
+    "retention": "session",
+    "max_artifacts": 50
+  },
+  "output": {
+    "dir": ".agentic/output/",
+    "format": "json"
+  },
+  "schemas": {
+    "analyzer": ".agentic/schemas/analysis.json",
+    "planner": ".agentic/schemas/planning.json",
+    "implementer": ".agentic/schemas/implementation.json",
+    "verifier": ".agentic/schemas/verification.json"
+  },
+  "instructions": {
+    "dir": ".opencode/instructions/",
+    "dir_claudecode": ".claudecode/instructions/",
+    "load_on_startup": ["conventions.md", "security.md"]
+  },
+  "instincts": {
+    "dir": ".opencode/instincts/",
+    "dir_claudecode": ".claudecode/instincts/",
+    "always_on": ["token-save.md", "no-prose.md", "phase-boundary.md"]
+  },
+  "hooks": {
+    "dir": ".opencode/hooks/",
+    "dir_claudecode": ".claude/hooks/",
+    "enabled": ["auto-memory.js", "compact-persist.js", "pre-phase-gate.js"],
+    "enabled_claudecode": ["auto-memory.ts", "compact-persist.ts", "pre-phase-gate.ts"]
+  }
+}

@@ -1,0 +1,153 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "analysis.schema.json",
+  "title": "Analyzer Phase Output",
+  "description": "JSON Schema contract for the Analyzer agent output. The Analyzer produces a structured assessment of the current state, target state, findings, risks, and recommendations. It MUST NOT modify any source files.",
+  "type": "object",
+  "required": ["phase", "objective", "summary", "current_state", "target_state", "findings", "risks", "dependencies", "complexity", "recommendation"],
+  "properties": {
+    "phase": {
+      "type": "string",
+      "const": "analyzer",
+      "description": "Phase identifier — always 'analyzer'"
+    },
+    "objective": {
+      "type": "string",
+      "description": "Single sentence describing what is being analyzed"
+    },
+    "summary": {
+      "type": "string",
+      "description": "Executive summary of the analysis result"
+    },
+    "current_state": {
+      "type": "object",
+      "required": ["platform", "version"],
+      "properties": {
+        "platform": {
+          "type": "string",
+          "description": "Current platform/framework name"
+        },
+        "version": {
+          "type": "string",
+          "description": "Current version"
+        },
+        "language": {
+          "type": "string",
+          "description": "Programming language"
+        },
+        "build_tool": {
+          "type": "string",
+          "description": "Build tool used"
+        }
+      }
+    },
+    "target_state": {
+      "type": "object",
+      "required": ["platform", "version"],
+      "properties": {
+        "platform": {
+          "type": "string",
+          "description": "Target platform/framework name"
+        },
+        "version": {
+          "type": "string",
+          "description": "Target version"
+        },
+        "language": {
+          "type": "string",
+          "description": "Target programming language version"
+        }
+      }
+    },
+    "findings": {
+      "type": "array",
+      "description": "List of factual findings from the analysis",
+      "items": {
+        "type": "object",
+        "required": ["id", "category", "description", "severity"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^F[0-9]{3}$",
+            "description": "Unique finding ID (e.g., F001)"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "platform_compatibility",
+              "dependency_compatibility",
+              "code_compatibility",
+              "reflection_modules",
+              "api_deprecation",
+              "build_configuration",
+              "testing",
+              "code_quality",
+              "security",
+              "performance",
+              "architecture",
+              "dependency_issue"
+            ],
+            "description": "Category of the finding"
+          },
+          "description": {
+            "type": "string",
+            "description": "Detailed description of the finding"
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["low", "medium", "high", "critical"],
+            "description": "Severity level"
+          },
+          "evidence": {
+            "type": "string",
+            "description": "File path, line number, or other evidence reference"
+          }
+        }
+      }
+    },
+    "risks": {
+      "type": "array",
+      "description": "List of risk statements",
+      "items": {
+        "type": "string"
+      }
+    },
+    "dependencies": {
+      "type": "array",
+      "description": "List of dependencies and their compatibility status",
+      "items": {
+        "type": "object",
+        "required": ["name", "version", "status"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Dependency name"
+          },
+          "version": {
+            "type": "string",
+            "description": "Current version"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["compatible", "needs_update", "incompatible", "incorrect_dependency", "unknown"],
+            "description": "Compatibility status"
+          },
+          "recommended_version": {
+            "type": "string",
+            "description": "Recommended version if update needed"
+          }
+        }
+      }
+    },
+    "complexity": {
+      "type": "string",
+      "enum": ["low", "medium", "high"],
+      "description": "Overall complexity assessment"
+    },
+    "recommendation": {
+      "type": "string",
+      "description": "Actionable recommendation based on findings"
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,130 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "implementation.schema.json",
+  "title": "Implementer Phase Output",
+  "description": "JSON Schema contract for the Implementer agent output. The Implementer executes the approved plan step-by-step, recording every file change, command execution, and result. It follows the plan exactly and MUST NOT deviate.",
+  "type": "object",
+  "required": ["phase", "plan_reference", "steps", "files_modified", "files_created", "commands_executed", "result"],
+  "properties": {
+    "phase": {
+      "type": "string",
+      "const": "implementer",
+      "description": "Phase identifier — always 'implementer'"
+    },
+    "plan_reference": {
+      "type": "string",
+      "description": "Reference to the plan file consumed (e.g., .agentic/memory/planner.json)"
+    },
+    "steps": {
+      "type": "array",
+      "description": "Ordered record of implementation steps executed",
+      "items": {
+        "type": "object",
+        "required": ["task_id", "action", "status"],
+        "properties": {
+          "task_id": {
+            "type": "string",
+            "description": "The plan task ID being executed (e.g., T001)"
+          },
+          "action": {
+            "type": "string",
+            "description": "Description of what was done"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["success", "failed", "skipped", "partial"],
+            "description": "Step execution status"
+          },
+          "output": {
+            "type": "string",
+            "description": "Command output or result summary"
+          },
+          "error": {
+            "type": "string",
+            "description": "Error message if status is 'failed'"
+          }
+        }
+      }
+    },
+    "files_modified": {
+      "type": "array",
+      "description": "List of files that were modified",
+      "items": {
+        "type": "object",
+        "required": ["path", "change_type"],
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "File path relative to project root"
+          },
+          "change_type": {
+            "type": "string",
+            "enum": ["created", "modified", "deleted"],
+            "description": "Type of change"
+          },
+          "description": {
+            "type": "string",
+            "description": "What was changed and why"
+          }
+        }
+      }
+    },
+    "files_created": {
+      "type": "array",
+      "description": "List of new files created",
+      "items": {
+        "type": "string"
+      }
+    },
+    "commands_executed": {
+      "type": "array",
+      "description": "List of shell commands executed during implementation",
+      "items": {
+        "type": "object",
+        "required": ["command", "exit_code"],
+        "properties": {
+          "command": {
+            "type": "string",
+            "description": "The command that was run"
+          },
+          "exit_code": {
+            "type": "integer",
+            "description": "Exit code (0 = success)"
+          },
+          "output_summary": {
+            "type": "string",
+            "description": "Truncated output summary"
+          }
+        }
+      }
+    },
+    "result": {
+      "type": "string",
+      "enum": ["success", "partial", "failed"],
+      "description": "Overall implementation result"
+    },
+    "errors": {
+      "type": "array",
+      "description": "List of errors encountered",
+      "items": {
+        "type": "object",
+        "required": ["task_id", "message"],
+        "properties": {
+          "task_id": {
+            "type": "string",
+            "description": "Task ID where the error occurred"
+          },
+          "message": {
+            "type": "string",
+            "description": "Error message"
+          },
+          "recovery": {
+            "type": "string",
+            "description": "Recovery action taken (if any)"
+          }
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}

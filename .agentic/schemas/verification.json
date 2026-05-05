@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "verification.schema.json",
+  "title": "Verifier Phase Output",
+  "description": "JSON Schema contract for the Verifier agent output. The Verifier checks the implementation against the plan's success criteria, runs tests, and produces a pass/fail verdict. It MUST NOT edit any source files.",
+  "type": "object",
+  "required": ["phase", "plan_reference", "implementation_reference", "checks", "verdict"],
+  "properties": {
+    "phase": {
+      "type": "string",
+      "const": "verifier",
+      "description": "Phase identifier — always 'verifier'"
+    },
+    "plan_reference": {
+      "type": "string",
+      "description": "Reference to the plan file (e.g., .agentic/memory/planner.json)"
+    },
+    "implementation_reference": {
+      "type": "string",
+      "description": "Reference to the implementation output (e.g., .agentic/memory/implementer.json)"
+    },
+    "checks": {
+      "type": "array",
+      "description": "List of verification checks performed",
+      "items": {
+        "type": "object",
+        "required": ["criterion", "type", "status", "evidence"],
+        "properties": {
+          "criterion": {
+            "type": "string",
+            "description": "The success criterion being checked"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["build", "test", "lint", "manual", "schema_validation", "file_existence", "content_check"],
+            "description": "Type of verification check"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pass", "fail", "warn", "skip"],
+            "description": "Check result"
+          },
+          "evidence": {
+            "type": "string",
+            "description": "Evidence supporting the status (command output, file path, etc.)"
+          },
+          "details": {
+            "type": "string",
+            "description": "Additional details or failure reason"
+          }
+        }
+      }
+    },
+    "test_results": {
+      "type": "object",
+      "description": "Summary of test execution results",
+      "properties": {
+        "total": {
+          "type": "integer",
+          "description": "Total number of tests"
+        },
+        "passed": {
+          "type": "integer",
+          "description": "Number of passing tests"
+        },
+        "failed": {
+          "type": "integer",
+          "description": "Number of failing tests"
+        },
+        "skipped": {
+          "type": "integer",
+          "description": "Number of skipped tests"
+        },
+        "command": {
+          "type": "string",
+          "description": "Test command that was executed"
+        },
+        "output_summary": {
+          "type": "string",
+          "description": "Truncated test output"
+        }
+      }
+    },
+    "verdict": {
+      "type": "string",
+      "enum": ["pass", "fail", "partial"],
+      "description": "Overall verification verdict"
+    },
+    "failures": {
+      "type": "array",
+      "description": "List of failures that must be addressed before shipping",
+      "items": {
+        "type": "object",
+        "required": ["check", "reason", "suggested_fix"],
+        "properties": {
+          "check": {
+            "type": "string",
+            "description": "The criterion that failed"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Why it failed"
+          },
+          "suggested_fix": {
+            "type": "string",
+            "description": "Suggested action to fix the failure"
+          }
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}
