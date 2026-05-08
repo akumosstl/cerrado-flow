@@ -1,6 +1,6 @@
 ---
-name: implement
-description: Executa a implementação de um planner.
+name: quick-impl
+description: Executa uma implementação simples.
 agents: implementer
 temperature: 0.1
 arguments:
@@ -17,12 +17,12 @@ Executa o agent `implementer`.
 ## Uso
 
 ```
-/implement <implementation_id>
+/quick-impl <implementation_id> <user-query>
 ```
 
 ## O Que Faz
 
-1. **implementer**: executa o agent `implementer` passando o `implementation_id`
+1. **implementer**: executa o agent `quick-impl` passando o `implementation_id` e o `user-query`
 
 
 ## Quando Usar
@@ -36,8 +36,3 @@ Executa o agent `implementer`.
 
 - Não faz commit de mudanças no git (use `/ship` para isso)
 - Não corrige automaticamente falhas de verificação
-
-## Próximos Passos
-
-- Se o veredito for `pass`: execute `/ship` para commitar e finalizar
-- Se o veredito for `fail`: execute `/replan` para tratar as falhas

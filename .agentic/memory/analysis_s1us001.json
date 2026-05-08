@@ -1,0 +1,107 @@
+{
+  "phase": "analyzer",
+  "analysis_id": "s1us001",
+  "objective": "Adicionar um botão ao lado do input 'Buscar Produto*' na tela de vendas que abra um modal de listagem de produtos com título 'Produtos' e botões 'ok' e 'cancelar', seguindo o padrão de modais existente no projeto.",
+  "summary": "A página de vendas (frontend/app/vendas/page.js) possui um campo de busca de produtos com autocomplete, mas não tem um botão para abrir um modal de seleção. O projeto já possui um padrão de modais bem definido em globals.css (modal-overlay, modal-content, modal-header) e diversos componentes modal. Será necessário criar um novo componente ProdutoSelectorModal seguindo o padrão existente e adicionar um botão ao lado do input. A complexidade é baixa pois reutiliza estado, API e handlers já existentes.",
+  "current_state": {
+    "platform": "web",
+    "version": "Next.js (App Router) + React 18",
+    "language": "JavaScript (JSX)",
+    "page": "frontend/app/vendas/page.js",
+    "styles": {
+      "global": "frontend/app/globals.css",
+      "module": "frontend/app/vendas/vendas.module.css"
+    },
+    "existing_modals": [
+      "frontend/components/ProdutoModal.js",
+      "frontend/components/ClienteModal.js",
+      "frontend/components/PetModal.js",
+      "frontend/components/FuncionarioModal.js",
+      "frontend/components/FornecedorModal.js",
+      "frontend/components/ImageModal.js"
+    ],
+    "input_location": "vendas page.js, linhas 314-340, fieldset '2. Adicionar Produto'",
+    "produtos_state": "já carregado via fetch GET /api/produtos, disponível em state produtos[]",
+    "add_handler": "handleAdicionarProduto(produto) já implementado (linhas 109-131)"
+  },
+  "target_state": {
+    "platform": "web",
+    "version": "Next.js (App Router) + React 18",
+    "new_component": "frontend/components/ProdutoSelectorModal.js",
+    "modal_structure": {
+      "overlay_class": "modal-overlay active",
+      "content_class": "modal-content",
+      "header_class": "modal-header",
+      "title": "Produtos",
+      "buttons": ["ok", "cancelar"]
+    },
+    "page_changes": {
+      "file": "frontend/app/vendas/page.js",
+      "additions": [
+        "Botão ao lado do input de busca",
+        "Estado showProductModal",
+        "Renderização condicional do ProdutoSelectorModal"
+      ]
+    }
+  },
+  "findings": [
+    {
+      "id": "F1",
+      "category": "code",
+      "description": "O input de busca (linhas 314-340) já possui autocomplete com produtosFiltrados — o modal será uma visualização alternativa/expandida de todos os produtos.",
+      "severity": "info"
+    },
+    {
+      "id": "F2",
+      "category": "code",
+      "description": "Não existe um componente de 'modal seletor de produto' (apenas modais CRUD com formulários); será necessário criar um novo componente ProdutoSelectorModal.",
+      "severity": "low"
+    },
+    {
+      "id": "F3",
+      "category": "style",
+      "description": "O padrão de modal já está definido em globals.css (modal-overlay, modal-content, modal-header, close-button) — o novo modal deve reutilizar essas classes.",
+      "severity": "info"
+    },
+    {
+      "id": "F4",
+      "category": "code",
+      "description": "O estado produtos[] já é carregado via carregarProdutos() e está disponível no escopo da página — não precisa de nova chamada API.",
+      "severity": "info"
+    },
+    {
+      "id": "F5",
+      "category": "design",
+      "description": "O botão 'ok' deve chamar handleAdicionarProduto(produtoSelecionado) e fechar o modal; 'cancelar' deve apenas fechar o modal sem ação.",
+      "severity": "low"
+    },
+    {
+      "id": "F6",
+      "category": "risk",
+      "description": "O modal não deve conflitar com o autocomplete existente — considerar esconder/fechar o dropdown ao abrir o modal.",
+      "severity": "medium"
+    },
+    {
+      "id": "F7",
+      "category": "code",
+      "description": "Nenhum modal existente no projeto possui botões 'ok'/'cancelar' padronizados; os existentes usam 'Salvar'/'Cancelar' em formulários. É necessário definir o layout de seleção.",
+      "severity": "low"
+    }
+  ],
+  "risks": [
+    "Duplicidade de UI: autocomplete + modal podem confundir se não houver separação clara de propósito",
+    "Fechamento do modal: implementar clique fora (overlay click) e tecla Escape para fechar é esperado do usuário",
+    "Estado de seleção: o modal precisa gerenciar qual produto está selecionado antes do clique em 'ok'",
+    "Performance: se a lista de produtos for grande, o modal pode precisar de scroll ou paginação",
+    "Botão 'ok' desabilitado: até que um produto seja selecionado, o botão ok deve ficar desabilitado para evitar adição acidental"
+  ],
+  "dependencies": [
+    { "name": "Next.js (App Router)", "version": "latest", "status": "compatible" },
+    { "name": "React", "version": "^18", "status": "compatible" },
+    { "name": "CSS Modules (vendas.module.css)", "version": "N/A", "status": "in_use" },
+    { "name": "globals.css (modal classes)", "version": "N/A", "status": "defined" },
+    { "name": "API /api/produtos (GET)", "version": "N/A", "status": "integrated" }
+  ],
+  "complexity": "low",
+  "recommendation": "Criar novo componente ProdutoSelectorModal.js em frontend/components/ seguindo o padrão de modais do projeto (classes globais .modal-overlay, .modal-content, .modal-header). O componente deve receber props { produtos, onSelect, onClose } e renderizar título 'Produtos', lista clicável de produtos, e botões 'ok' (desabilitado até selecionar) e 'cancelar'. Na página vendas/page.js, adicionar estado showProductModal, botão ao lado do input, e renderização condicional do modal. Usar o mesmo handler handleAdicionarProduto já existente para adicionar ao carrinho quando 'ok' for clicado."
+}

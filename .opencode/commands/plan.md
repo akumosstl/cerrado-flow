@@ -2,10 +2,9 @@
 name: plan
 description: Lê a análise e a transforma em um plano executável.
 agents: planner
-model: default
 arguments:
-  - name: id
-    description: "O nome identificador do plan (ex: sprint1, sprint2, sprint3)"
+  - name: planner_id
+    description: "Identificador usado no nome do artefato (planning_{{planner_id}}.json)"
     required: true
     default: "current"
 ---
@@ -17,12 +16,12 @@ Executa o **analyzer**.
 ## Uso
 
 ```
-/plan <id>
+/plan <planner_id>
 ```
 
 ## O Que Faz
 
-1. Executa o agente `planner` passando o `id` 
+1. Executa o agente `planner` passando o `planner_id` 
 
 ## Quando Usar
 
@@ -38,4 +37,4 @@ Executa o **analyzer**.
 
 ## Próximos Passos
 
-Após `/plan`, revise `@.agentic/memory/planner_{{arguments.id}}.json`. Se satisfeito, execute `/implement` para executar o plano.
+Após `/plan`, revise `@.agentic/memory/planning_{{planner_id}}.json`. Se satisfeito, execute `/implement` para executar o plano.

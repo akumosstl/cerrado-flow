@@ -1,0 +1,55 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "default_agent": "build",
+  "permission": {
+    "read": "allow",
+    "edit": "allow",
+    "glob": "allow",
+    "grep": "allow",
+    "list": "allow",
+    "bash": "allow",
+    "task": "allow",
+    "todowrite": "allow",
+    "question": "allow",
+    "webfetch": "allow",
+    "websearch": "allow",
+    "lsp": "allow",
+    "skill": "allow",
+    "external_directory": "ask"
+  },
+  "skills": {
+    "paths": [
+      ".opencode/skills"
+    ]
+  },
+  "plugin": [
+    "@opencode-ai/plugin",
+    ".opencode/plugins/graphify.js"
+  ],
+  "server": {
+    "port": 4096
+  },
+  "snapshot": true,
+  "autoupdate": true,
+  "share": "manual",
+  "compaction": {
+    "auto": true,
+    "prune": true,
+    "reserved": 10000
+  },
+  "mcp": {
+    "sql-runner": {
+      "type": "local",
+      "command": ["java", "-jar", "C:\\Users\\USER\\projects\\github\\petshop\\sql-runner.jar"],
+      "enabled": true
+    }
+  },
+  "watcher": {
+    "ignore": [
+      "node_modules/**",
+      ".agentic/**",
+      "dist/**",
+      ".git/**"
+    ]
+  }
+}

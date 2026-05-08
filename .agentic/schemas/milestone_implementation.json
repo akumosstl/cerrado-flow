@@ -1,0 +1,151 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "milestone_implementation.schema.json",
+  "title": "Milestone Implementation Phase Output",
+  "description": "JSON Schema contract for the Milestone Implementer agent output. Extends the standard implementation schema with milestone-specific fields. The Milestone Implementer executes only the tasks belonging to a specific milestone, stopping on the first failure.",
+  "type": "object",
+  "required": ["phase", "plan_reference", "milestone", "milestone_name", "tasks_scope", "steps", "files_modified", "files_created", "commands_executed", "result"],
+  "properties": {
+    "phase": {
+      "type": "string",
+      "const": "milestone-implementer",
+      "description": "Phase identifier — always 'milestone-implementer'"
+    },
+    "plan_reference": {
+      "type": "string",
+      "description": "Reference to the plan file consumed (e.g., .agentic/memory/planning_s1us005.json)"
+    },
+    "milestone": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Milestone number being implemented (1-based)"
+    },
+    "milestone_name": {
+      "type": "string",
+      "description": "Name of the milestone from the planning file"
+    },
+    "tasks_scope": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^T[0-9]{3}$"
+      },
+      "description": "List of task IDs that belong to this milestone scope"
+    },
+    "steps": {
+      "type": "array",
+      "description": "Ordered record of implementation steps executed",
+      "items": {
+        "type": "object",
+        "required": ["task_id", "action", "status"],
+        "properties": {
+          "task_id": {
+            "type": "string",
+            "description": "The plan task ID being executed (e.g., T001)"
+          },
+          "action": {
+            "type": "string",
+            "description": "Description of what was done"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["success", "failed", "skipped"],
+            "description": "Step execution status"
+          },
+          "output": {
+            "type": "string",
+            "description": "Command output or result summary"
+          },
+          "error": {
+            "type": "string",
+            "description": "Error message if status is 'failed'"
+          }
+        }
+      }
+    },
+    "files_modified": {
+      "type": "array",
+      "description": "List of files that were modified",
+      "items": {
+        "type": "object",
+        "required": ["path", "change_type"],
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "File path relative to project root"
+          },
+          "change_type": {
+            "type": "string",
+            "enum": ["created", "modified", "deleted"],
+            "description": "Type of change"
+          },
+          "description": {
+            "type": "string",
+            "description": "What was changed and why"
+          }
+        }
+      }
+    },
+    "files_created": {
+      "type": "array",
+      "description": "List of new files created",
+      "items": {
+        "type": "string"
+      }
+    },
+    "commands_executed": {
+      "type": "array",
+      "description": "List of shell commands executed during implementation",
+      "items": {
+        "type": "object",
+        "required": ["command", "exit_code"],
+        "properties": {
+          "command": {
+            "type": "string",
+            "description": "The command that was run"
+          },
+          "exit_code": {
+            "type": "integer",
+            "description": "Exit code (0 = success)"
+          },
+          "output_summary": {
+            "type": "string",
+            "description": "Truncated output summary"
+          }
+        }
+      }
+    },
+    "result": {
+      "type": "string",
+      "enum": ["success", "partial", "failed"],
+      "description": "Overall milestone implementation result. 'failed' if any task failed (stop-on-fail policy)"
+    },
+    "failed_at_task": {
+      "type": "string",
+      "description": "Task ID where implementation stopped due to failure (if result is 'failed')"
+    },
+    "errors": {
+      "type": "array",
+      "description": "List of errors encountered",
+      "items": {
+        "type": "object",
+        "required": ["task_id", "message"],
+        "properties": {
+          "task_id": {
+            "type": "string",
+            "description": "Task ID where the error occurred"
+          },
+          "message": {
+            "type": "string",
+            "description": "Error message"
+          },
+          "recovery": {
+            "type": "string",
+            "description": "Recovery action taken (if any)"
+          }
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}

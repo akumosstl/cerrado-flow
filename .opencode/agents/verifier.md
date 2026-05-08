@@ -2,7 +2,6 @@
 name: verifier
 description: Agente sênior de verificação — leitura+bash(apenas teste), sem edições. Verifica implementação contra critérios de sucesso do plano, executa testes e produz veredito passa/falha.
 mode: primary
-model: default
 temperature: 0.0
 steps: 10
 permissions:

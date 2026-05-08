@@ -2,7 +2,6 @@
 name: verify
 description: Executa o agente Verifier no estado atual. Verifica artefatos de implementação existentes contra critérios de sucesso do plano.
 agent: verifier
-model: default
 arguments:
   - name: id
     description: "O nome identificador do verify (ex: sprint1, sprint2, sprint3)"

@@ -1,0 +1,98 @@
+{
+  "phase": "milestone-verifier",
+  "plan_reference": ".agentic/memory/planning_s1us005.json",
+  "implementation_reference": ".agentic/memory/implementation_s1us005_m2.json",
+  "milestone": 2,
+  "milestone_criteria_checked": "VendaRepository possui: findAllPaginated(page, size, status, dataInicio, dataFim, busca) retornando List, countAll(status, dataInicio, dataFim, busca) retornando int, updateStatus(numVenda, status) retornando int, findItensByNumVenda(numVenda) retornando List. VendaService possui: listarVendas() com paginacao/filtros, cancelarVenda(numVenda) com reversao de estoque via UPDATE Produto, createVenda() aceita dataHora opcional com fallback LocalDateTime.now() e validacao max 30 dias retroativo. VendaController possui: GET /api/vendas com RequestParam(page, size, status, dataInicio, dataFim, busca), PATCH /api/vendas/{numVenda}/cancelar. Todo SQL usa PreparedStatement com parametros bind (?).",
+  "checks": [
+    {
+      "criterion": "VendaRepository.findAllPaginated()",
+      "type": "content_check",
+      "status": "pass",
+      "evidence": "VendaRepository.java:59-90 - metodo existe com SQL dinamico WHERE 1=1 + filtros + LIMIT/OFFSET, usando PreparedStatementSetter via lambda com setObject(i+1, params.get(i))"
+    },
+    {
+      "criterion": "VendaRepository.countAll()",
+      "type": "content_check",
+      "status": "pass",
+      "evidence": "VendaRepository.java:92-119 - metodo existe, mesmo padrao SQL dinamico, retorna int"
+    },
+    {
+      "criterion": "VendaRepository.updateStatus()",
+      "type": "content_check",
+      "status": "pass",
+      "evidence": "VendaRepository.java:121-124 - metodo existe, SQL UPDATE Venda SET status = ? WHERE num_venda = ?, retorna int"
+    },
+    {
+      "criterion": "VendaRepository.findItensByNumVenda()",
+      "type": "content_check",
+      "status": "pass",
+      "evidence": "VendaRepository.java:126-137 - metodo existe com JOIN contem+Produto, mapeia ItemVendaResponseDTO com codProduto, nomeProduto, quantidade, precoUnitario, subtotal"
+    },
+    {
+      "criterion": "VendaService.listarVendas()",
+      "type": "content_check",
+      "status": "pass",
+      "evidence": "VendaService.java:88-101 - metodo existe, chama findAllPaginated + countAll, retorna Map com vendas, totalPages, total, page"
+    },
+    {
+      "criterion": "VendaService.cancelarVenda() com @Transactional e reversao de estoque",
+      "type": "content_check",
+      "status": "pass",
+      "evidence": "VendaService.java:103-120 - metodo existe com @Transactional(rollbackFor=Exception.class), verifica existencia e status nao CANCELADA, itera itens chamando produtoRepository.reverterEstoque(), chama updateStatus(CANCELADA)"
+    },
+    {
+      "criterion": "VendaService.createVenda() com dataHora opcional e validacao 30 dias",
+      "type": "content_check",
+      "status": "pass",
+      "evidence": "VendaService.java:33-86 - metodo existe, fallback LocalDateTime.now() na linha 40, validacao max 30 dias retroativos nas linhas 42-46 lancando BusinessException"
+    },
+    {
+      "criterion": "VendaController GET /api/vendas com RequestParam",
+      "type": "content_check",
+      "status": "pass",
+      "evidence": "VendaController.java:38-53 - @GetMapping, RequestParam page(defaultValue=0), size(defaultValue=10), status, dataInicio, dataFim, busca (todos required=false)"
+    },
+    {
+      "criterion": "VendaController PATCH /api/vendas/{numVenda}/cancelar",
+      "type": "content_check",
+      "status": "pass",
+      "evidence": "VendaController.java:55-70 - @PatchMapping(\"/{numVenda}/cancelar\"), chama service.cancelarVenda(), retorna 200 com message"
+    },
+    {
+      "criterion": "Todo SQL usa PreparedStatement com ?",
+      "type": "content_check",
+      "status": "pass",
+      "evidence": "Todos os metodos em VendaRepository usam PreparedStatement via lambda PreparedStatementSetter — findAllPaginated(linha 85), countAll(linha 114), saveVenda(linha 39), updateStatus(linha 123), findItensByNumVenda(linha 128), findByNumVenda(linha 142). Nenhuma concatenacao de strings em SQL."
+    },
+    {
+      "criterion": "Backend compila (mvn compile)",
+      "type": "build",
+      "status": "fail",
+      "evidence": "mvn compile falhou: [114,28] queryForObject incompatible com lambda PreparedStatementSetter + Class<Integer>. [142,32] queryForObject incompatible com lambda PreparedStatementSetter + RowMapper<Venda>. O Spring JdbcTemplate.queryForObject() nao aceita PreparedStatementSetter como argumento — aceita varargs Object... para parametros, nao um lambda.",
+      "details": "Linha 114: jdbcTemplate.queryForObject(finalSql, ps -> { for (int i...)... }, Integer.class) — assinatura errada. O metodo correto para queryForObject com PreparedStatementSetter e uma classe de retorno nao existe no JdbcTemplate. O que existe: (String, RowMapper<T>, Object...), (String, Class<T>, Object...), ou (String, PreparedStatementSetter, RowMapper<T>). O codigo mistura PreparedStatementSetter lambda com Class<T> — assinatura incompativel."
+    },
+    {
+      "criterion": "Linha 142: jdbcTemplate.queryForObject(sql, ps -> ps.setInt(1, numVenda), rowMapper) — mesma assinatura errada. O metodo queryForObject nao aceita (String, PreparedStatementSetter, RowMapper). A assinatura correta seria (String, PreparedStatementSetter, RowMapper<T>)?"
+    },
+    {
+      "criterion": "Verificar se existe metodo aceitar PreparedStatementSetter+RowMapper",
+      "type": "content_check",
+      "status": "fail",
+      "evidence": "O metodo queryForObject nao possui overload que aceite (String, PreparedStatementSetter, RowMapper<T>). As assinaturas validas para queryForObject sao: (String, Class<T>), (String, RowMapper<T>), (String, Object[], Class<T>), (String, Object[], int[], Class<T>), (String, RowMapper<T>, Object...). Nenhuma delas aceita PreparedStatementSetter como segundo parametro. O codigo nao compila."
+    }
+  ],
+  "verdict": "fail",
+  "failures": [
+    {
+      "check": "Backend compila (mvn compile)",
+      "reason": "VendaRepository.java:114 — countAll() usa queryForObject(sql, ps -> { ... }, Integer.class) que nao e assinatura valida do JdbcTemplate. O metodo queryForObject nao aceita PreparedStatementSetter como segundo argumento quando o terceiro e Class<T>. A assinatura correta seria usar query() com PreparedStatementSetter e RowMapper, ou usar queryForObject(sql, Object[], int[], Class<T>) passando os params como array.",
+      "suggested_fix": "Em countAll(), alterar jdbcTemplate.queryForObject(finalSql, ps -> { for... }, Integer.class) para jdbcTemplate.queryForObject(finalSql, params.toArray(), Integer.class) — passando os parametros como array posicional. Alternativamente usar jdbcTemplate.query(finalSql, ps -> { for... }, rowMapperCount) com um metodo wrapper ou usar uma query simples sem PreparedStatementSetter."
+    },
+    {
+      "check": "Backend compila (mvn compile) — findByNumVenda",
+      "reason": "VendaRepository.java:142 — findByNumVenda() usa queryForObject(sql, ps -> ps.setInt(1, numVenda), rowMapper) que nao e assinatura valida. PreparedStatementSetter lambda + RowMapper nao sao compativeis como argumentos 2 e 3 de queryForObject.",
+      "suggested_fix": "Alterar para jdbcTemplate.queryForObject(sql, new Object[]{numVenda}, new int[]{Types.INTEGER}, rowMapper) ou usar jdbcTemplate.query(sql, ps -> ps.setInt(1, numVenda), rowMapper).stream().findFirst().orElse(null) — porem isso requer mudar o tipo de retorno."
+    }
+  ]
+}

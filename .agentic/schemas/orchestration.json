@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "orchestration.schema.json",
+  "title": "Orchestration Phase Output",
+  "description": "JSON Schema contract for the Orchestrator agent output. The Orchestrator drives milestone-by-milestone execution with inter-milestone verification, stopping on failure and allowing resume from any milestone.",
+  "type": "object",
+  "required": ["phase", "orchestration_id", "plan_reference", "milestones_status", "current_milestone", "overall_status"],
+  "properties": {
+    "phase": {
+      "type": "string",
+      "const": "orchestrator",
+      "description": "Phase identifier — always 'orchestrator'"
+    },
+    "orchestration_id": {
+      "type": "string",
+      "description": "The identifier passed as argument (e.g., s1us005)"
+    },
+    "plan_reference": {
+      "type": "string",
+      "description": "Reference to the plan file (e.g., .agentic/memory/planning_s1us005.json)"
+    },
+    "from_milestone": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "First milestone executed in this orchestration run"
+    },
+    "to_milestone": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Last milestone attempted in this orchestration run"
+    },
+    "skip_verify": {
+      "type": "boolean",
+      "description": "Whether verification was skipped between milestones"
+    },
+    "milestones_status": {
+      "type": "array",
+      "description": "Status of every milestone in the plan",
+      "items": {
+        "type": "object",
+        "required": ["milestone", "name", "status"],
+        "properties": {
+          "milestone": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Milestone order number (1-based)"
+          },
+          "name": {
+            "type": "string",
+            "description": "Milestone name from the planning file"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pending", "in_progress", "completed", "failed", "skipped"],
+            "description": "Milestone execution status"
+          },
+          "implementation_ref": {
+            "type": "string",
+            "description": "Path to milestone implementation artifact (e.g., .agentic/memory/implementation_s1us005_m1.json)"
+          },
+          "verification_ref": {
+            "type": "string",
+            "description": "Path to milestone verification artifact (e.g., .agentic/memory/verify_s1us005_m1.json)"
+          },
+          "verdict": {
+            "type": "string",
+            "enum": ["pass", "fail", "partial", "skipped"],
+            "description": "Verification verdict for this milestone"
+          },
+          "tasks": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^T[0-9]{3}$"
+            },
+            "description": "Task IDs belonging to this milestone"
+          },
+          "started_at": {
+            "type": "string",
+            "description": "ISO 8601 timestamp when milestone execution started"
+          },
+          "finished_at": {
+            "type": "string",
+            "description": "ISO 8601 timestamp when milestone execution finished"
+          },
+          "error": {
+            "type": "string",
+            "description": "Error message if milestone failed"
+          }
+        }
+      }
+    },
+    "current_milestone": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "The milestone number where execution currently stands (last attempted or in-progress)"
+    },
+    "overall_status": {
+      "type": "string",
+      "enum": ["in_progress", "success", "failed", "partial"],
+      "description": "Overall orchestration status. 'success' only if all milestones pass verification."
+    },
+    "summary": {
+      "type": "string",
+      "description": "Human-readable summary of orchestration result"
+    },
+    "next_action": {
+      "type": "string",
+      "description": "Suggested next action for the user (e.g., '/milestone-impl s1us005 --milestone 3 --tasks T006' or '/orchestrate s1us005 --from 4')"
+    }
+  },
+  "additionalProperties": false
+}

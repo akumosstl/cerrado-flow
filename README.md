@@ -1,4 +1,6 @@
-# .agentic/ — Cérebro do Projeto
+# 🤖 Pipeline Agentic — Fluxo Básico
+
+## .agentic/ — Cérebro do Projeto
 
 ## Propósito
 
@@ -82,3 +84,143 @@ O controlador do pipeline lê `config.json` → carrega schemas → invoca agent
 - **Schema-first**: Contratos definem o que cada fase produz
 - **Sem código**: O cérebro é puramente dados — nenhum executável, nenhum script
 - **Legível por humanos**: Todos os arquivos são JSON ou Markdown — inspecionável, diffable, versionable
+
+
+# 🤖 Pipeline Agentic — Fluxo Milestone-a-Milestone
+
+Este projeto usa um pipeline de agents opencode para análise, planejamento, implementação e verificação de features. O fluxo milestone permite implementar features complexas de forma incremental, com validação automática entre cada etapa.
+
+### Arquitetura do Pipeline
+
+```
+/analyze → /plan → /orchestrate (ou /milestone-impl + /milestone-verify)
+```
+
+| Fase | Command | Agent | Permissão | Artefato |
+|---|---|---|---|---|
+| Análise | `/analyze <id>` | analyzer | somente leitura | `analysis_<id>.json` |
+| Planejamento | `/plan <id>` | planner | somente leitura | `planning_<id>.json` |
+| Implementação (por milestone) | `/milestone-impl <id> --milestone <n>` | milestone-implementer | leitura+escrita+bash | `implementation_<id>_m<n>.json` |
+| Verificação (por milestone) | `/milestone-verify <id> --milestone <n>` | milestone-verifier | leitura+bash(teste) | `verify_<id>_m<n>.json` |
+| Orquestração (automática) | `/orchestrate <id>` | orchestrator | leitura+escrita+bash | `orchestration_<id>.json` |
+
+### Fluxo Completo — Passo a Passo
+
+#### 1. Análise
+
+```bash
+/analyze s1us005 "histórico de vendas com filtros, cancelamento e venda retroativa"
+```
+
+Gera `@.agentic/memory/analysis_s1us005.json` com findings, riscos e dependências.
+
+#### 2. Planejamento
+
+```bash
+/plan s1us005
+```
+
+Lê a análise e gera `@.agentic/memory/planning_s1us005.json` com milestones, tasks, rollback e critérios de sucesso.
+
+#### 3. Orquestração Automática (recomendado)
+
+```bash
+/orchestrate s1us005
+```
+
+Executa todos os milestones em sequência, com verificação entre cada um:
+
+```
+M1: implement → verify → pass ✓  →  implementation_s1us005_m1.json + verify_s1us005_m1.json
+M2: implement → verify → pass ✓  →  implementation_s1us005_m2.json + verify_s1us005_m2.json
+M3: implement → verify → fail ✗  →  PARA (não vai para M4)
+```
+
+Se um milestone falhar, corrija e retome:
+
+```bash
+# Corrigir e re-implementar o milestone 3
+/milestone-impl s1us005 --milestone 3 --tasks T006
+
+# Verificar se passou
+/milestone-verify s1us005 --milestone 3
+
+# Retomar orquestração do milestone 4 em diante
+/orchestrate s1us005 --from_milestone 4
+```
+
+#### 4. Execução Manual (milestone por milestone)
+
+Alternativa à orquestração automática — mais controle granular:
+
+```bash
+# Implementar milestone 1
+/milestone-impl s1us005 --milestone 1
+
+# Verificar milestone 1
+/milestone-verify s1us005 --milestone 1
+
+# Se passou, implementar milestone 2
+/milestone-impl s1us005 --milestone 2
+
+# E assim por diante...
+```
+
+#### 5. Executar Tasks Específicas
+
+Para corrigir apenas uma task dentro de um milestone:
+
+```bash
+/milestone-impl s1us005 --milestone 3 --tasks T006
+```
+
+### Parâmetros dos Commands
+
+| Command | Parâmetro | Obrigatório | Descrição |
+|---|---|---|---|
+| `/milestone-impl` | `implementation_id` | sim | ID do plano (ex: s1us005) |
+| | `milestone` | sim | Número do milestone (1-based) |
+| | `tasks` | não | Task IDs separados por vírgula (ex: T001,T002). Sobrepõe milestone |
+| `/milestone-verify` | `verification_id` | sim | ID do plano |
+| | `milestone` | sim | Número do milestone a verificar |
+| `/orchestrate` | `orchestration_id` | sim | ID do plano |
+| | `from_milestone` | não | Milestone inicial para retomada (default: 1) |
+| | `to_milestone` | não | Milestone final (default: último) |
+| | `skip_verify` | não | Pula verificação entre milestones (default: false) |
+
+### Convenção de Artefatos
+
+```
+.agentic/memory/
+├── analysis_s1us005.json              # Saída do analyzer
+├── planning_s1us005.json              # Saída do planner
+├── implementation_s1us005_m1.json     # Implementação do milestone 1
+├── implementation_s1us005_m2.json     # Implementação do milestone 2
+├── verify_s1us005_m1.json             # Verificação do milestone 1
+├── verify_s1us005_m2.json             # Verificação do milestone 2
+└── orchestration_s1us005.json         # Status consolidado da orquestração
+```
+
+### Política Stop-on-Fail
+
+O milestone-implementer usa política **stop-on-fail**: se uma task falha dentro de um milestone, a implementação para imediatamente e não executa as tasks subsequentes. O orchestrator também para no primeiro milestone que falhar na verificação. Isso garante que problemas sejam corrigidos antes de prosseguir.
+
+### Fluxo Original (sem milestones)
+
+O fluxo original sem granularidade por milestone continua disponível:
+
+```bash
+/analyze s1us005 "descrição"
+/plan s1us005
+/implement s1us005    # Executa TODAS as tasks de uma vez
+/verify s1us005       # Verifica TODOS os critérios de uma vez
+```
+
+Use `/implement` para tarefas simples. Use `/orchestrate` para tarefas complexas com múltiplos milestones.
+
+---
+
+## 📄 Licença
+
+Distribuído sob a licença MIT. Veja `LICENSE` para mais informações.
+

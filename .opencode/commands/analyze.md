@@ -1,29 +1,28 @@
 ---
 name: analyze
-description: Executa apenas o agente Analyzer. Produz uma análise estruturada da solicitação atual e a escreve em .agentic/memory/analyze_{id}.json.
+description: Executa apenas o agente Analyzer.
 agent: analyzer
-model: default
 temperature: 0.1
 arguments:
-  - name: id
-    description: "O nome identificador da análise (ex: sprint1, sprint2, sprint3)"
+  - name:  analysis_id
+    description: "O nome identificador da análise"
     required: true
     default: "current"
 ---
 
 # Comando: Analyze
 
-Executa **apenas** a fase Analyzer do pipeline Agentic.
+Executa **apenas** a fase Analyzer do pipeline Agentic, chamando o agente `analyzer`.
 
 ## Uso
 
 ```
-/analyze <id> <descrição da tarefa>
+/analyze < analysis_id> <descrição da tarefa>
 ```
 
 ## O Que Faz
 
-1. Invoca o agente `analyzer` com `id` e a descrição da tarefa do usuário
+1. Invoca o agente `analyzer` com ` analysis_id` e a descrição da tarefa do usuário
 
 ## Quando Usar
 

@@ -1,0 +1,135 @@
+{
+  "phase": "analyzer",
+  "objective": "Analisar a viabilidade de criar uma página de histórico/gerenciamento de vendas de produtos com listagem paginada, filtros, cancelamento e criação retroativa.",
+  "summary": "A funcionalidade exige mudanças significativas em backend (schema, model, repository, service, controller) e frontend (nova página, rota, botão de navegação). O modelo Venda não possui campo de status — é necessário ALTER TABLE. O VendaRepository só tem métodos de escrita — faltam queries de leitura, paginação e filtros. O VendaController só tem POST — faltam GET (listagem paginada+filtrada) e PATCH (cancelamento). O VendaCompletaRequestDTO não tem campo dataHora — necessário para venda retroativa. No frontend, a página /vendas é um PDV sem listagem; é preciso criar nova rota /vendas/historico, adicionar botão-ícone no header e construir página completa com toolbar, tabela paginada e modal de criação retroativa.",
+  "current_state": {
+    "platform": "Spring Boot + Next.js (App Router)",
+    "version": "3.5.6 (backend) / 16.0.1 (frontend)",
+    "language": "Java 17 / JavaScript (React 19)",
+    "build_tool": "Maven / npm"
+  },
+  "target_state": {
+    "platform": "Spring Boot + Next.js (App Router)",
+    "version": "3.5.6 (backend) / 16.0.1 (frontend)",
+    "language": "Java 17 / JavaScript (React 19)"
+  },
+  "findings": [
+    {
+      "id": "F001",
+      "category": "architecture",
+      "description": "O modelo Venda (Venda.java:7-12) NÃO possui campo 'status'. A tabela Venda no banco (full_schema.sql:76-85) também não tem coluna de status. Para implementar cancelamento lógico (label/status 'CANCELADA' sem exclusão), é obrigatório adicionar coluna 'status' na tabela Venda e campo correspondente no Model, DTOs e mapeamentos JDBC.",
+      "severity": "critical",
+      "evidence": "backend/src/main/java/com/pet_shop/pet_shop/Model/Venda.java linhas 7-12; database/full_schema.sql linhas 76-85"
+    },
+    {
+      "id": "F002",
+      "category": "architecture",
+      "description": "VendaRepository (VendaRepository.java:15-42) possui apenas saveVenda() e saveItemVenda(). Não existem métodos de leitura: findAll, findById, findByFilters, count, etc. É necessário implementar queries JDBC para: listagem paginada com filtros (status, data range), contagem total para paginação, busca por texto, e update de status para cancelamento.",
+      "severity": "critical",
+      "evidence": "backend/src/main/java/com/pet_shop/pet_shop/Repository/VendaRepository.java linhas 20-41"
+    },
+    {
+      "id": "F003",
+      "category": "architecture",
+      "description": "VendaController (VendaController.java:17-41) possui apenas POST /. Faltam endpoints: GET / (listagem paginada com filtros via query params: page, size, status, dataInicio, dataFim, busca) e PATCH /{numVenda}/cancelar (cancelamento lógico). O projeto usa JdbcTemplate (não JPA), logo paginação deve ser implementada manualmente com LIMIT/OFFSET no SQL.",
+      "severity": "critical",
+      "evidence": "backend/src/main/java/com/pet_shop/pet_shop/Controller/VendaController.java linhas 22-34"
+    },
+    {
+      "id": "F004",
+      "category": "code_compatibility",
+      "description": "VendaCompletaRequestDTO (VendaCompletaRequestDTO.java:7-10) não possui campo dataHora. VendaService.createVenda() (VendaService.java:55) fixa dataHora como LocalDateTime.now(). Para suportar venda retroativa, é necessário adicionar campo dataHora opcional no DTO e modificar o Service para usar dto.getDataHora() quando fornecido, mantendo LocalDateTime.now() como fallback.",
+      "severity": "high",
+      "evidence": "backend/src/main/java/com/pet_shop/pet_shop/DTO/VendaCompletaRequestDTO.java linhas 7-10; backend/src/main/java/com/pet_shop/pet_shop/Service/VendaService.java linha 55"
+    },
+    {
+      "id": "F005",
+      "category": "architecture",
+      "description": "VendaResponseDTO (VendaResponseDTO.java:7-13) não possui campo 'status' nem lista de itens. Para a listagem de vendas, o DTO de resposta precisa incluir: status, e opcionalmente os itens da venda (via JOIN com tabela 'contem'). Pode-se criar VendaListResponseDTO estendido ou adicionar campos ao existente.",
+      "severity": "high",
+      "evidence": "backend/src/main/java/com/pet_shop/pet_shop/DTO/VendaResponseDTO.java linhas 7-13"
+    },
+    {
+      "id": "F006",
+      "category": "architecture",
+      "description": "A página /vendas (page.js:207-209) tem header '<h2>Caixa da Loja (Venda de Produtos)</h2>' sem botão ao lado. É necessário adicionar botão-ícone (ex: FaListAlt ou FaClipboardList do react-icons) ao lado do h2, usando next/link ou useRouter para navegar para /vendas/historico. O CSS do header está em globals.css (className 'section-header').",
+      "severity": "medium",
+      "evidence": "frontend/app/vendas/page.js linhas 207-209"
+    },
+    {
+      "id": "F007",
+      "category": "architecture",
+      "description": "Não existe rota /vendas/historico no frontend. É necessário criar frontend/app/vendas/historico/page.js e frontend/app/vendas/historico/historico.module.css. A página deve conter: toolbar (input busca, botão lupa, select status, date range), tabela paginada de vendas, botão cancelar por item, e botão/modal para criar venda retroativa.",
+      "severity": "high",
+      "evidence": "frontend/app/vendas/ (apenas page.js e vendas.module.css existem)"
+    },
+    {
+      "id": "F008",
+      "category": "security",
+      "description": "O campo dataHora no DTO de criação de venda retroativa permite que o usuário insira datas arbitrárias no passado. Isso pode ser usado para fraudes (vendas em datas incorretas para fins contábeis). Recomenda-se validar que a data não excede um limite retroativo razoável (ex: 30 dias) e/ou registrar quem cancelou/criou a venda retroativa em log de auditoria.",
+      "severity": "medium",
+      "evidence": "Requisito do usuário: 'campo a mais para inserir a data da venda' — sem restrição de data"
+    },
+    {
+      "id": "F009",
+      "category": "code_quality",
+      "description": "O cancelamento de venda (status='CANCELADA') não reverte automaticamente o estoque. O trigger TRG_AtualizarEstoqueAposVenda (full_schema.sql:179) decrementa estoque ao criar venda, mas não há trigger ou lógica para reverter ao cancelar. Vendas canceladas manterão estoque reduzido incorretamente. É necessário implementar lógica de reversão de estoque no Service ao cancelar.",
+      "severity": "high",
+      "evidence": "database/full_schema.sql linha 179 (TRG_AtualizarEstoqueAposVenda); ausência de trigger de reversão"
+    },
+    {
+      "id": "F010",
+      "category": "dependency_issue",
+      "description": "O projeto não usa Spring Data JPA (usa JdbcTemplate puro). Paginação, filtros dinâmicos e ordenação devem ser implementados manualmente com concatenação de SQL. Isso aumenta complexidade e risco de SQL injection se parâmetros não forem devidamente sanitizados. Usar PreparedStatement com parâmetros (?) é obrigatório.",
+      "severity": "medium",
+      "evidence": "backend/pom.xml linhas 35-36 (spring-boot-starter-jdbc, sem spring-boot-starter-data-jpa); VendaRepository.java usa JdbcTemplate"
+    }
+  ],
+  "risks": [
+    "ALTER TABLE em produção: adicionar coluna 'status' na tabela Venda com DEFAULT 'CONCLUIDA' pode ser bloqueante se a tabela for grande — requer migration planejada",
+    "Reversão de estoque ao cancelar venda: sem implementar, vendas canceladas deixarão estoque inconsistente permanentemente",
+    "SQL injection em filtros dinâmicos: como o projeto usa JdbcTemplate com SQL manual, filtros de busca textual devem usar parâmetros bind (?) e nunca concatenação de strings",
+    "Venda retroativa sem restrição de data: permite inserir vendas em datas arbitrárias no passado, risco contábil/fiscal",
+    "Ausência de testes automatizados no backend (pom.xml não inclui dependências de teste além de spring-boot-starter-test básico) — novas queries JDBC não terão cobertura de teste",
+    "Paginação manual com LIMIT/OFFSET pode ser ineficiente para tabelas muito grandes — considerar paginação baseada em cursor se volume crescer"
+  ],
+  "dependencies": [
+    {
+      "name": "spring-boot-starter-jdbc",
+      "version": "3.5.6",
+      "status": "compatible"
+    },
+    {
+      "name": "spring-boot-starter-web",
+      "version": "3.5.6",
+      "status": "compatible"
+    },
+    {
+      "name": "mysql-connector-j",
+      "version": "runtime",
+      "status": "compatible"
+    },
+    {
+      "name": "next",
+      "version": "16.0.1",
+      "status": "compatible"
+    },
+    {
+      "name": "react",
+      "version": "19.2.0",
+      "status": "compatible"
+    },
+    {
+      "name": "react-icons",
+      "version": "^5.5.0",
+      "status": "compatible"
+    },
+    {
+      "name": "react-dom",
+      "version": "19.2.0",
+      "status": "compatible"
+    }
+  ],
+  "complexity": "high",
+  "recommendation": "Implementar em 4 fases: (1) Backend schema — ALTER TABLE Venda ADD COLUMN status VARCHAR(20) DEFAULT 'CONCLUIDA'; adicionar campo status no Model, DTOs e mapeamentos. (2) Backend API — adicionar no VendaRepository: findAllPaginated(filters), countAll(filters), updateStatus(numVenda, status); no VendaService: listarVendas(), cancelarVenda() com reversão de estoque, createVenda() com dataHora opcional; no VendaController: GET / com @RequestParam para paginação/filtros, PATCH /{numVenda}/cancelar. (3) Frontend rota — criar /vendas/historico/page.js com toolbar de filtros, tabela paginada, botão cancelar e modal de criação retroativa; adicionar botão-ícone no header de /vendas. (4) Validação — adicionar restrição de data retroativa (ex: máx 30 dias) e garantir que todo SQL use PreparedStatement."
+}

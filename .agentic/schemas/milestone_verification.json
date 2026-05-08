@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "milestone_verification.schema.json",
+  "title": "Milestone Verification Phase Output",
+  "description": "JSON Schema contract for the Milestone Verifier agent output. Verifies implementation of a specific milestone against its criteria. Produces a pass/fail verdict scoped to that milestone only.",
+  "type": "object",
+  "required": ["phase", "plan_reference", "implementation_reference", "milestone", "milestone_criteria_checked", "checks", "verdict"],
+  "properties": {
+    "phase": {
+      "type": "string",
+      "const": "milestone-verifier",
+      "description": "Phase identifier — always 'milestone-verifier'"
+    },
+    "plan_reference": {
+      "type": "string",
+      "description": "Reference to the plan file (e.g., .agentic/memory/planning_s1us005.json)"
+    },
+    "implementation_reference": {
+      "type": "string",
+      "description": "Reference to the milestone implementation output (e.g., .agentic/memory/implementation_s1us005_m1.json)"
+    },
+    "milestone": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Milestone number being verified (1-based)"
+    },
+    "milestone_criteria_checked": {
+      "type": "string",
+      "description": "The 'criteria' field from the milestone in the planning file — what was verified against"
+    },
+    "checks": {
+      "type": "array",
+      "description": "List of verification checks performed for this milestone",
+      "items": {
+        "type": "object",
+        "required": ["criterion", "type", "status", "evidence"],
+        "properties": {
+          "criterion": {
+            "type": "string",
+            "description": "The milestone criterion being checked"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["build", "test", "lint", "manual", "schema_validation", "file_existence", "content_check"],
+            "description": "Type of verification check"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pass", "fail", "warn", "skip"],
+            "description": "Check result"
+          },
+          "evidence": {
+            "type": "string",
+            "description": "Evidence supporting the status (command output, file path, etc.)"
+          },
+          "details": {
+            "type": "string",
+            "description": "Additional details or failure reason"
+          }
+        }
+      }
+    },
+    "test_results": {
+      "type": "object",
+      "description": "Summary of test execution results",
+      "properties": {
+        "total": {
+          "type": "integer",
+          "description": "Total number of tests"
+        },
+        "passed": {
+          "type": "integer",
+          "description": "Number of passing tests"
+        },
+        "failed": {
+          "type": "integer",
+          "description": "Number of failing tests"
+        },
+        "skipped": {
+          "type": "integer",
+          "description": "Number of skipped tests"
+        },
+        "command": {
+          "type": "string",
+          "description": "Test command that was executed"
+        },
+        "output_summary": {
+          "type": "string",
+          "description": "Truncated test output"
+        }
+      }
+    },
+    "verdict": {
+      "type": "string",
+      "enum": ["pass", "fail", "partial"],
+      "description": "Milestone verification verdict — only 'pass' if ALL milestone criteria pass"
+    },
+    "failures": {
+      "type": "array",
+      "description": "List of failures that must be addressed before this milestone can pass",
+      "items": {
+        "type": "object",
+        "required": ["check", "reason", "suggested_fix"],
+        "properties": {
+          "check": {
+            "type": "string",
+            "description": "The criterion that failed"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Why it failed"
+          },
+          "suggested_fix": {
+            "type": "string",
+            "description": "Suggested action to fix the failure"
+          }
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}

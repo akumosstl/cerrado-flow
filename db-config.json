@@ -1,0 +1,9 @@
+{
+  "type": "mysql",
+  "user": "root",
+  "password": "root",
+  "address": "localhost",
+  "port": 3306,
+  "database": "petShop",
+  "ssl": false
+}
