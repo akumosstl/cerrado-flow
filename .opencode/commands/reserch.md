@@ -2,7 +2,6 @@
 name: reserch
 description: Executa apenas o agente Researcher. Produz uma pesquisa estruturada da solicitação atual e a escreve em @.agentic/memory/researching_{id}.json.
 agent: researcher
-model: default
 temperature: 0.3
 arguments:
 - name: id

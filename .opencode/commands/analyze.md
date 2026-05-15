@@ -17,7 +17,7 @@ Executa **apenas** a fase Analyzer do pipeline Agentic, chamando o agente `analy
 ## Uso
 
 ```
-/analyze < analysis_id> <descrição da tarefa>
+/analyze <analysis_id> <descrição da tarefa>
 ```
 
 ## O Que Faz

@@ -11,7 +11,7 @@ arguments:
 
 # Comando: Plan
 
-Executa o **analyzer**.
+Executa o **planner**.
 
 ## Uso
 

@@ -2,8 +2,6 @@
 
 ## .agentic/ — Cérebro do Projeto
 
-## Propósito
-
 O diretório `.agentic/` é o **cérebro** de qualquer projeto que usa o framework Agentic. Ele armazena todos os dados persistentes que os agentes leem e escrevem durante a execução do pipeline: configuração, contratos de schema, artefatos de memória e entregáveis finais.
 
 ## Estrutura

@@ -1,0 +1,184 @@
+{
+  "phase": "planner",
+  "input_analysis": "analysis_s1us005.json — Historico/gerenciamento de vendas: listagem paginada com filtros (status, data, busca), cancelamento logico com reversao de estoque, e criacao retroativa. 10 findings: F001 (Venda sem campo status — ALTER TABLE obrigatorio), F002 (VendaRepository so tem save — faltam queries de leitura/paginacao), F003 (VendaController so tem POST — faltam GET e PATCH), F004 (VendaCompletaRequestDTO sem dataHora), F005 (VendaResponseDTO sem status e itens), F006 (header /vendas sem botao de navegacao), F007 (rota /vendas/historico nao existe), F008 (risco de data retroativa sem restricao), F009 (cancelamento nao reverte estoque), F010 (SQL manual com risco de injection). Complexidade: high.",
+  "strategy": "Estrategia em 4 fases sequenciais com dependencia estrita: (1) Schema e Model — ALTER TABLE Venda ADD status, adicionar campo no Model, DTOs e mapeamentos JDBC; (2) Backend API — implementar queries de leitura paginada/filtrada, contagem, update de status, e logica de reversao de estoque no Service; expor endpoints GET / e PATCH /{numVenda}/cancelar no Controller; (3) Frontend — criar rota /vendas/historico com toolbar de filtros, tabela paginada, botao cancelar e modal de criacao retroativa; adicionar botao-icone no header de /vendas e link no Sidebar; (4) Validacoes — restricao de data retroativa (max 30 dias) e garantia de PreparedStatement em todo SQL. Cada fase e um milestone com criterio de completude verificavel.",
+  "milestones": [
+    {
+      "name": "Schema e Model atualizados com campo status",
+      "order": 1,
+      "criteria": "ALTER TABLE Venda ADD COLUMN status VARCHAR(20) DEFAULT CONCLUIDA executado no full_schema.sql; Venda.java tem campo String status com getter/setter; VendaResponseDTO tem campo status; VendaCompletaRequestDTO tem campo LocalDateTime dataHora opcional; VendaRepository.saveVenda() inclui coluna status no INSERT; RowMapper de leitura mapeia coluna status."
+    },
+    {
+      "name": "Backend API completa — listagem, filtros, cancelamento, venda retroativa",
+      "order": 2,
+      "criteria": "VendaRepository possui: findAllPaginated(page, size, status, dataInicio, dataFim, busca) retornando List, countAll(status, dataInicio, dataFim, busca) retornando int, updateStatus(numVenda, status) retornando int, findItensByNumVenda(numVenda) retornando List. VendaService possui: listarVendas() com paginacao/filtros, cancelarVenda(numVenda) com reversao de estoque via UPDATE Produto, createVenda() aceita dataHora opcional com fallback LocalDateTime.now() e validacao max 30 dias retroativo. VendaController possui: GET /api/vendas com RequestParam(page, size, status, dataInicio, dataFim, busca), PATCH /api/vendas/{numVenda}/cancelar. Todo SQL usa PreparedStatement com parametros bind (?)."
+    },
+    {
+      "name": "Frontend — pagina /vendas/historico funcional com filtros, tabela, cancelamento e modal retroativo",
+      "order": 3,
+      "criteria": "Rota /vendas/historico existe (page.js + historico.module.css). Pagina contem: toolbar com input busca, select status (Todos/CONCLUIDA/CANCELADA), date range (dataInicio, dataFim), botao filtrar. Tabela paginada exibe: numVenda, dataHora, cliente, atendente, valorTotal, formaPagamento, status, acoes (cancelar). Botao cancelar chama PATCH /api/vendas/{numVenda}/cancelar e recarrega lista. Botao Nova Venda Retroativa abre modal com campos: cliente, atendente, formaPagamento, dataHora (datetime-local), itens. Header de /vendas tem botao-icone (FaClipboardList) linkando para /vendas/historico. Sidebar tem link Historico de Vendas sob Caixa (Produtos)."
+    },
+    {
+      "name": "Validacoes e seguranca implementadas",
+      "order": 4,
+      "criteria": "VendaService.createVenda() rejeita dataHora anterior a 30 dias com BusinessException. Nenhum SQL usa concatenacao de strings — todos usam PreparedStatement com ?. VendaService.cancelarVenda() reverte estoque dentro de @Transactional. Venda ja cancelada nao pode ser cancelada novamente (lanca BusinessException)."
+    }
+  ],
+  "tasks": [
+    {
+      "id": "T001",
+      "title": "ALTER TABLE Venda ADD COLUMN status VARCHAR(20) DEFAULT CONCLUIDA no full_schema.sql e adicionar campo String status no Venda.java com getter/setter e no construtor",
+      "priority": "high",
+      "owner": "implementer",
+      "depends_on": [],
+      "estimated_effort": "10min",
+      "files": [
+        "database/full_schema.sql",
+        "backend/src/main/java/com/pet_shop/pet_shop/Model/Venda.java"
+      ],
+      "commands": []
+    },
+    {
+      "id": "T002",
+      "title": "Adicionar campo status no VendaResponseDTO e campo LocalDateTime dataHora (opcional) no VendaCompletaRequestDTO; criar VendaListDTO com campos: numVenda, dataHora, nomeCliente, nomeAtendente, valorTotal, formaPagamento, status; criar ItemVendaResponseDTO com campos: codProduto, nomeProduto, quantidade, precoUnitario, subtotal",
+      "priority": "high",
+      "owner": "implementer",
+      "depends_on": ["T001"],
+      "estimated_effort": "15min",
+      "files": [
+        "backend/src/main/java/com/pet_shop/pet_shop/DTO/VendaResponseDTO.java",
+        "backend/src/main/java/com/pet_shop/pet_shop/DTO/VendaCompletaRequestDTO.java",
+        "backend/src/main/java/com/pet_shop/pet_shop/DTO/VendaListDTO.java",
+        "backend/src/main/java/com/pet_shop/pet_shop/DTO/ItemVendaResponseDTO.java"
+      ],
+      "commands": []
+    },
+    {
+      "id": "T003",
+      "title": "Atualizar VendaRepository: (1) adicionar coluna status no INSERT de saveVenda(); (2) criar VendaRowMapper mapeando todos os campos incluindo status; (3) implementar findAllPaginated() com SQL dinamico (WHERE 1=1 + filtros opcionais com AND + LIMIT ? OFFSET ?) usando PreparedStatement; (4) implementar countAll() com mesmos filtros dinamicos; (5) implementar updateStatus(numVenda, status); (6) implementar findItensByNumVenda(numVenda) com JOIN Produto para trazer nomeProduto e precoUnitario",
+      "priority": "high",
+      "owner": "implementer",
+      "depends_on": ["T002"],
+      "estimated_effort": "30min",
+      "files": [
+        "backend/src/main/java/com/pet_shop/pet_shop/Repository/VendaRepository.java"
+      ],
+      "commands": []
+    },
+    {
+      "id": "T004",
+      "title": "Implementar VendaService.listarVendas(page, size, status, dataInicio, dataFim, busca) retornando Map com vendas (List) e totalPages; implementar cancelarVenda(numVenda): verificar se venda existe e nao esta cancelada, reverter estoque (UPDATE Produto SET quantidade_estoque = quantidade_estoque + subquery), chamar vendaRepository.updateStatus(numVenda, CANCELADA); modificar createVenda() para aceitar dataHora opcional do DTO com fallback LocalDateTime.now() e validacao max 30 dias retroativo",
+      "priority": "high",
+      "owner": "implementer",
+      "depends_on": ["T003"],
+      "estimated_effort": "25min",
+      "files": [
+        "backend/src/main/java/com/pet_shop/pet_shop/Service/VendaService.java"
+      ],
+      "commands": []
+    },
+    {
+      "id": "T005",
+      "title": "Implementar VendaController: GET /api/vendas com RequestParam int page (default 0), int size (default 10), String status, String dataInicio, String dataFim, String busca — chama service.listarVendas() e retorna ResponseEntity com Map; PATCH /api/vendas/{numVenda}/cancelar — chama service.cancelarVenda(numVenda) e retorna 200 com mensagem de sucesso; manter POST /api/vendas existente intacto",
+      "priority": "high",
+      "owner": "implementer",
+      "depends_on": ["T004"],
+      "estimated_effort": "15min",
+      "files": [
+        "backend/src/main/java/com/pet_shop/pet_shop/Controller/VendaController.java"
+      ],
+      "commands": []
+    },
+    {
+      "id": "T006",
+      "title": "Criar frontend/app/vendas/historico/page.js: pagina use client com estados para filtros (busca, status, dataInicio, dataFim), paginacao (page, totalPages), vendas[] e loading; useEffect para fetch GET /api/vendas com query params; toolbar com input busca, select status (vazio=Todos, CONCLUIDA, CANCELADA), inputs date para dataInicio/dataFim, botao filtrar; tabela data-table com colunas: #, Data/Hora, Cliente, Atendente, Valor, Pagamento, Status, Acoes; botao cancelar (FaBan) por linha (apenas se status=CONCLUIDA) com confirmacao; paginacao com botoes Anterior/Proximo; botao Nova Venda Retroativa que abre modal",
+      "priority": "high",
+      "owner": "implementer",
+      "depends_on": ["T005"],
+      "estimated_effort": "45min",
+      "files": [
+        "frontend/app/vendas/historico/page.js"
+      ],
+      "commands": []
+    },
+    {
+      "id": "T007",
+      "title": "Criar frontend/app/vendas/historico/historico.module.css com estilos para: toolbar (flex com gap, inputs inline), tabela de vendas, badge de status (.statusConcluida verde, .statusCancelada vermelho), paginacao, modal de venda retroativa",
+      "priority": "medium",
+      "owner": "implementer",
+      "depends_on": ["T006"],
+      "estimated_effort": "15min",
+      "files": [
+        "frontend/app/vendas/historico/historico.module.css"
+      ],
+      "commands": []
+    },
+    {
+      "id": "T008",
+      "title": "Adicionar botao-icone FaClipboardList ao lado do h2 no header de /vendas (page.js linha 208) usando next/link para /vendas/historico; adicionar link Historico de Vendas no Sidebar.js sob o item Caixa (Produtos) com icone FaClipboardList",
+      "priority": "medium",
+      "owner": "implementer",
+      "depends_on": ["T006"],
+      "estimated_effort": "10min",
+      "files": [
+        "frontend/app/vendas/page.js",
+        "frontend/components/Sidebar.js"
+      ],
+      "commands": []
+    },
+    {
+      "id": "T009",
+      "title": "Implementar modal de criacao de venda retroativa na pagina /vendas/historico: campos select para cliente e atendente (carregados via API), select formaPagamento, input datetime-local para dataHora, busca e selecao de itens (reusar logica de ProdutoSelectorModal), botao finalizar que envia POST /api/vendas com dataHora preenchido",
+      "priority": "high",
+      "owner": "implementer",
+      "depends_on": ["T006", "T007"],
+      "estimated_effort": "30min",
+      "files": [
+        "frontend/app/vendas/historico/page.js"
+      ],
+      "commands": []
+    },
+    {
+      "id": "T010",
+      "title": "Executar ALTER TABLE no banco de dados MySQL para adicionar coluna status na tabela Venda existente; verificar se backend compila (mvn compile); verificar se frontend compila (npm run build); testar manualmente: GET /api/vendas retorna lista paginada, PATCH cancela venda e reverte estoque, POST com dataHora cria venda retroativa, data > 30 dias rejeitada",
+      "priority": "high",
+      "owner": "verifier",
+      "depends_on": ["T005", "T008", "T009"],
+      "estimated_effort": "20min",
+      "files": [],
+      "commands": [
+        "cd backend && mvn compile",
+        "cd frontend && npm run build"
+      ]
+    }
+  ],
+  "rollback_plan": [
+    "T001-T002: reverter Venda.java, VendaResponseDTO.java, VendaCompletaRequestDTO.java via git checkout; remover novos DTOs (VendaListDTO.java, ItemVendaResponseDTO.java) via rm",
+    "T003: reverter VendaRepository.java via git checkout",
+    "T004: reverter VendaService.java via git checkout",
+    "T005: reverter VendaController.java via git checkout",
+    "T006-T007: remover diretorio frontend/app/vendas/historico/ via rm -rf",
+    "T008: reverter frontend/app/vendas/page.js e frontend/components/Sidebar.js via git checkout",
+    "T009: incluso no rollback de T006 (mesmo arquivo)",
+    "Banco de dados: ALTER TABLE Venda DROP COLUMN status; para reverter o schema",
+    "Rollback completo: git checkout -- backend/ frontend/ && rm -rf frontend/app/vendas/historico/ && ALTER TABLE Venda DROP COLUMN status"
+  ],
+  "success_criteria": [
+    "GET /api/vendas?page=0&size=10 retorna lista paginada de vendas com campos: numVenda, dataHora, nomeCliente, nomeAtendente, valorTotal, formaPagamento, status",
+    "GET /api/vendas?status=CANCELADA retorna apenas vendas canceladas",
+    "GET /api/vendas?dataInicio=2024-01-01&dataFim=2024-12-31 retorna vendas no periodo",
+    "GET /api/vendas?busca=Maria retorna vendas cujo nome do cliente contem Maria",
+    "PATCH /api/vendas/{numVenda}/cancelar altera status para CANCELADA e reverte estoque dos itens da venda",
+    "PATCH /api/vendas/{numVenda}/cancelar em venda ja cancelada retorna erro 400",
+    "POST /api/vendas com dataHora preenchido cria venda com a data informada",
+    "POST /api/vendas com dataHora anterior a 30 dias retorna erro 400",
+    "POST /api/vendas sem dataHora cria venda com LocalDateTime.now() (comportamento atual preservado)",
+    "Pagina /vendas/historico exibe toolbar com filtros, tabela paginada e botoes de acao",
+    "Botao cancelar na tabela funciona com confirmacao e atualiza a lista",
+    "Modal de venda retroativa permite criar venda com data no passado (ate 30 dias)",
+    "Botao-icone no header de /vendas navega para /vendas/historico",
+    "Link Historico de Vendas aparece no Sidebar sob Caixa (Produtos)",
+    "Nenhum erro de compilacao no backend (mvn compile) nem no frontend (npm run build)",
+    "Todo SQL em VendaRepository usa PreparedStatement com parametros bind (?) — zero concatenacao de strings"
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "phase": "planner",
+  "input_analysis": "analysis_s1us001.json — Adicionar botão ao lado do input 'Buscar Produto*' na tela de vendas para abrir modal de listagem de produtos com título 'Produtos' e botões 'ok'/'cancelar'.",
+  "strategy": "Estratégia incremental de baixo risco: (1) criar novo componente ProdutoSelectorModal seguindo o padrão de modais existente (classes globals.css .modal-overlay, .modal-content, .modal-header); (2) modificar vendas/page.js adicionando estado showProductModal, botão gatilho ao lado do input, e renderização condicional do modal; (3) integrar com estado e handlers existentes (produtos[], handleAdicionarProduto). Nenhuma nova API necessária — reusa dados já carregados.",
+  "milestones": [
+    {
+      "name": "Componente ProdutoSelectorModal criado",
+      "order": 1,
+      "criteria": "Arquivo frontend/components/ProdutoSelectorModal.js existe, renderiza título 'Produtos', overlay com .modal-overlay.active, lista de produtos recebida via props, botões 'ok' (desabilitado sem seleção) e 'cancelar'."
+    },
+    {
+      "name": "Integração na página de vendas concluída",
+      "order": 2,
+      "criteria": "Botão ao lado do input abre modal, clique em 'ok' chama handleAdicionarProduto e fecha modal, clique em 'cancelar' fecha modal sem ação, Modal fecha ao clicar fora (overlay) e ao pressionar Escape."
+    }
+  ],
+  "tasks": [
+    {
+      "id": "T001",
+      "title": "Criar componente ProdutoSelectorModal.js em frontend/components/ seguindo padrão de modais do projeto",
+      "priority": "high",
+      "owner": "implementer",
+      "depends_on": [],
+      "estimated_effort": "15min",
+      "files": ["frontend/components/ProdutoSelectorModal.js"],
+      "commands": []
+    },
+    {
+      "id": "T002",
+      "title": "Adicionar estado showProductModal, botão gatilho ao lado do input, e renderização condicional do modal em vendas/page.js",
+      "priority": "high",
+      "owner": "implementer",
+      "depends_on": ["T001"],
+      "estimated_effort": "10min",
+      "files": ["frontend/app/vendas/page.js"],
+      "commands": []
+    },
+    {
+      "id": "T003",
+      "title": "Verificar integração — modal abre/fecha corretamente, 'ok' adiciona ao carrinho, 'cancelar' fecha, overlay e Escape fecham, dropdown de autocomplete esconde ao abrir modal",
+      "priority": "medium",
+      "owner": "verifier",
+      "depends_on": ["T002"],
+      "estimated_effort": "10min",
+      "files": [],
+      "commands": ["npm run dev", "npm run lint"]
+    }
+  ],
+  "rollback_plan": [
+    "T001: deletar frontend/components/ProdutoSelectorModal.js",
+    "T002: reverter alterações em frontend/app/vendas/page.js via git checkout -- frontend/app/vendas/page.js",
+    "T003: git checkout -- frontend/app/vendas/page.js && rm frontend/components/ProdutoSelectorModal.js"
+  ],
+  "success_criteria": [
+    "Botão '⋯' (ou similar) aparece ao lado do input 'Buscar Produto*'",
+    "Clique no botão abre modal com título 'Produtos' e lista de todos os produtos",
+    "Clique em um produto na lista o seleciona (destaca visualmente)",
+    "Botão 'ok' fica desabilitado enquanto nenhum produto estiver selecionado",
+    "Clique em 'ok' chama handleAdicionarProduto(produtoSelecionado) e fecha o modal",
+    "Clique em 'cancelar' fecha o modal sem adicionar nada",
+    "Clique no overlay (fora do modal) fecha o modal",
+    "Tecla Escape fecha o modal",
+    "Dropdown de autocomplete não conflita com o modal (esconde ao abrir)",
+    "Nenhum erro de compilação ou lint"
+  ]
+}
