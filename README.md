@@ -67,7 +67,23 @@ Qualquer runtime de IA (OpenCode, Claude Code, harness customizado) lê `.agenti
 
 ### Para Novos Projetos
 
-Copie todo o diretório `.agentic/` para a raiz do seu projeto. Então:
+#### Via npm (recomendado)
+
+```bash
+npm i cerrado-flow
+```
+
+O postinstall copia `.agentic/` e `.opencode/` automaticamente para a raiz do seu projeto. Se já existirem, são preservados (não sobrescritos).
+
+#### Via CLI
+
+```bash
+npx cerrado-flow          # copia .agentic/ e .opencode/ para o diretório atual
+npx cerrado-flow --force  # sobrescreve se já existirem
+```
+
+#### Configuração após instalação
+
 1. Edite `config.json` para atender às necessidades do seu projeto
 2. Mantenha os schemas como estão, ou estenda-os com propriedades opcionais
 3. Os diretórios `memory/` e `output/` serão populados em runtime
@@ -215,6 +231,127 @@ O fluxo original sem granularidade por milestone continua disponível:
 ```
 
 Use `/implement` para tarefas simples. Use `/orchestrate` para tarefas complexas com múltiplos milestones.
+
+---
+
+## Instalação e Uso via npm
+
+### Instalando em um projeto
+
+```bash
+mkdir meu-projeto && cd meu-projeto
+npm init -y
+npm i cerrado-flow
+```
+
+Após a instalação, os diretórios `.agentic/` e `.opencode/` estarão na raiz do projeto, prontos para uso com o OpenCode.
+
+### Uso programático
+
+```js
+const cerradoFlow = require("cerrado-flow");
+
+console.log(cerradoFlow.config);       // config.json do framework
+console.log(cerradoFlow.schemas);      // todos os JSON Schemas
+console.log(cerradoFlow.agenticDir);   // caminho para .agentic/
+console.log(cerradoFlow.opencodeDir);  // caminho para .opencode/
+```
+
+### CLI
+
+```bash
+npx cerrado-flow          # instala .agentic/ e .opencode/ no diretório atual
+npx cerrado-flow --force  # sobrescreve diretórios existentes
+```
+
+---
+
+## Publicação no npm
+
+### Primeira vez
+
+1. **Criar conta**: Acesse [npmjs.com/signup](https://www.npmjs.com/signup), crie a conta e verifique o email
+2. **Login no terminal**:
+
+```bash
+npm login
+```
+
+3. **Verificar disponibilidade do nome**:
+
+```bash
+npm view cerrado-flow
+```
+
+Se retornar 404, o nome está disponível. Caso contrário, use scoped package: `@seu-username/cerrado-flow`
+
+4. **Publicar**:
+
+```bash
+npm publish
+```
+
+Se for scoped package:
+
+```bash
+npm publish --access public
+```
+
+### Atualizações (novas versões)
+
+```bash
+# Patch (bug fix): 1.0.0 -> 1.0.1
+npm version patch
+
+# Minor (nova feature): 1.0.0 -> 1.1.0
+npm version minor
+
+# Major (breaking change): 1.0.0 -> 2.0.0
+npm version major
+
+# Publicar
+npm publish
+```
+
+### Testar antes de publicar
+
+```bash
+# Gerar o tarball local
+npm pack
+
+# Instalar a partir do tarball em outro diretório
+mkdir test-install && cd test-install
+npm init -y
+npm install ../caminho/para/cerrado-flow-1.0.0.tgz
+
+# Verificar se os arquivos foram copiados
+ls .agentic/ .opencode/
+```
+
+### Validação automática
+
+O script `prepublishOnly` valida automaticamente que todos os arquivos obrigatórios existem antes de publicar. Se algo estiver faltando, a publicação é abortada.
+
+### O que é incluído no pacote
+
+O campo `files` no `package.json` controla exatamente o que entra no pacote npm:
+
+| Incluído | Excluído |
+|---|---|
+| `.agentic/config.json` | `sql-runner.jar` |
+| `.agentic/schemas/` | `db-config.json` |
+| `.agentic/docs/` | `opencode.json` |
+| `.agentic/templates/` | `install-agentic.bat` |
+| `.agentic/site/generate.js` | `.agentic/memory/*.json` (runtime) |
+| `.agentic/memory/.gitkeep` | `.opencode/node_modules/` |
+| `.agentic/brain/wiki/` | `.opencode/package.json` |
+| `.opencode/agents/` | `.opencode/package-lock.json` |
+| `.opencode/commands/` | `.agentic/site/index.html` (gerado) |
+| `.opencode/hooks/` | |
+| `.opencode/instincts/` | |
+| `.opencode/instructions/` | |
+| `.opencode/skills/` | |
+| `install.js`, `cli.js`, `index.js` | |
 
 ---
 

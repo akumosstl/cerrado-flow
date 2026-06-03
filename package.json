@@ -1,0 +1,51 @@
+{
+  "name": "cerrado-flow",
+  "version": "1.0.0",
+  "description": "Agentic Framework - pipeline de orquestracao de agentes AI com fluxo data-driven",
+  "main": "index.js",
+  "bin": {
+    "cerrado-flow": "./cli.js"
+  },
+  "scripts": {
+    "postinstall": "node install.js",
+    "prepublishOnly": "node scripts/validate.js"
+  },
+  "files": [
+    ".agentic/config.json",
+    ".agentic/docs/",
+    ".agentic/schemas/",
+    ".agentic/templates/",
+    ".agentic/site/generate.js",
+    ".agentic/memory/.gitkeep",
+    ".agentic/output/.gitkeep",
+    ".agentic/brain/wiki/",
+    ".agentic/brain/raw/.gitkeep",
+    ".opencode/agents/",
+    ".opencode/commands/",
+    ".opencode/hooks/",
+    ".opencode/instincts/",
+    ".opencode/instructions/",
+    ".opencode/plugins/",
+    ".opencode/plugins.md",
+    ".opencode/skills/",
+    "install.js",
+    "cli.js",
+    "index.js",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "agentic",
+    "ai",
+    "pipeline",
+    "framework",
+    "opencode",
+    "orchestration"
+  ],
+  "author": "Focare",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": ""
+  }
+}
