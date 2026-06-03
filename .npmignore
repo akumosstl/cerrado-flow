@@ -1,0 +1,16 @@
+sql-runner.jar
+db-config.json
+opencode.json
+install-agentic.bat
+node_modules/
+.git/
+.agentic/memory/*.json
+!.agentic/memory/.gitkeep
+.agentic/output/*
+!.agentic/output/.gitkeep
+.agentic/site/index.html
+.agentic/brain/raw/
+.opencode/node_modules/
+.opencode/package-lock.json
+.opencode/package.json
+scripts/
